@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Histórico de Propostas - Proposta Express</title>
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color:#1f3b73;">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">Proposta Express</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="index.html">Enviar Proposta</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="historico.html">Histórico</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-10">
+        <!-- Logo -->
+        <div class="text-center mb-4">
+          <img src="https://raw.githubusercontent.com/jcfidelisma/Proposta-Express/main/logo.png" 
+               alt="Logo Proposta Express" 
+               style="max-width: 250px; height: auto;">
+        </div>
+
+        <div class="text-center mt-4 mb-3">
+            <a href="historico.html" class="btn btn-outline-dark">
+                Ver Histórico de Propostas
+            </a>
+        </div>
+
+        <!-- Card -->
+        <div class="card shadow-sm">
+          <div class="card-header text-center text-white" style="background-color:#1f3b73;">
+            <h4>Histórico de Propostas Enviadas</h4>
+          </div>
+          <div class="card-body">
+            <table class="table table-striped table-hover">
+              <thead class="table-dark">
+                <tr>
+                  <th>ID</th>
+                  <th>Cliente</th>
+                  <th>Empresa</th>
+                  <th>Valor</th>
+                  <th>Descrição</th>
+                  <th>E-mail</th>
+                  <th>Data de Envio</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="propostasTable">
+                <!-- Linhas preenchidas via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    async function carregarPropostas() {
+      try {
+        const response = await fetch("http://localhost:3001/propostas");
+        const propostas = await response.json();
+
+        const tbody = document.getElementById("propostasTable");
+        tbody.innerHTML = "";
+
+        propostas.forEach(p => {
+          const row = `
+            <tr>
+              <td>${p.id}</td>
+              <td>${p.cliente}</td>
+              <td>${p.empresa}</td>
+              <td>R$ ${p.valor}</td>
+              <td>${p.descricao}</td>
+              <td>${p.email}</td>
+              <td>${p.data_envio}</td>
+              <td>
+                ${p.status === "Enviado" 
+                  ? '<span class="badge bg-success">Enviado</span>' 
+                  : '<span class="badge bg-danger">Falha</span>'}
+              </td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
+        });
+      } catch (error) {
+        document.getElementById("propostasTable").innerHTML = `
+          <tr><td colspan="8" class="text-center text-danger">Erro ao carregar histórico.</td></tr>
+        `;
+      }
+    }
+
+    // Carrega ao abrir a página
+    carregarPropostas();
+  </script>
+
+    <!-- Footer fixo e responsivo -->
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-0 small">
+                © 2025 Proposta Express – Todos os direitos reservados
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
