@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const pdf = require("html-pdf");
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
 
 // Importa o banco de dados
 const db = require("./database.js");
@@ -10,6 +10,9 @@ const db = require("./database.js");
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+// Configuração do SendGrid via API
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Rota inicial para teste
 app.get("/", (req, res) => {
@@ -89,28 +92,24 @@ app.post("/send-email", async (req, res) => {
       });
     });
 
-    // Configuração do transporte com SendGrid (usando variáveis de ambiente)
-    let transporter = nodemailer.createTransport({
-      host: "smtp.sendgrid.net",
-      port: 587,
-      secure: false,
-      auth: {
-        user: "apikey", // obrigatório para SendGrid
-        pass: process.env.SENDGRID_API_KEY // definido no Render
-      }
-    });
-
-    // Envio do e-mail com anexo
-    await transporter.sendMail({
-      from: process.env.FROM_EMAIL, // remetente validado no SendGrid
+    // Monta e envia e-mail via API SendGrid
+    const msg = {
       to,
+      from: process.env.FROM_EMAIL, // remetente validado no SendGrid
       subject,
       text: "Segue em anexo a proposta comercial.",
       html: htmlContent,
       attachments: [
-        { filename: "proposta.pdf", content: pdfBuffer }
+        {
+          content: pdfBuffer.toString("base64"),
+          filename: "proposta.pdf",
+          type: "application/pdf",
+          disposition: "attachment"
+        }
       ]
-    });
+    };
+
+    await sgMail.send(msg);
 
     // Salva no banco como "Enviado"
     db.run(
