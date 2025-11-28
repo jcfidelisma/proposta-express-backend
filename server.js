@@ -95,7 +95,7 @@ app.post("/send-email", async (req, res) => {
     // Monta e envia e-mail via API SendGrid
     const msg = {
       to,
-      from: process.env.FROM_EMAIL, // remetente validado no SendGrid
+      from: process.env.EMAIL_FROM, // remetente validado no SendGrid
       subject,
       text: "Segue em anexo a proposta comercial.",
       html: htmlContent,
@@ -146,4 +146,5 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
