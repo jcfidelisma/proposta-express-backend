@@ -95,14 +95,14 @@ app.post("/send-email", async (req, res) => {
       port: 587,
       secure: false,
       auth: {
-        user: "apikey",
-        pass: process.env.SENDGRID_API_KEY // definido na plataforma
+        user: "apikey", // obrigatório para SendGrid
+        pass: process.env.SENDGRID_API_KEY // definido no Render
       }
     });
 
     // Envio do e-mail com anexo
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM, // remetente definido na plataforma
+      from: process.env.FROM_EMAIL, // remetente validado no SendGrid
       to,
       subject,
       text: "Segue em anexo a proposta comercial.",
@@ -121,7 +121,7 @@ app.post("/send-email", async (req, res) => {
 
     res.send("E-mail com PDF enviado com sucesso!");
   } catch (error) {
-    console.error(error);
+    console.error("Erro ao enviar e-mail:", error);
 
     // Salva no banco como "Falha"
     db.run(
