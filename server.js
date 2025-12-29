@@ -44,10 +44,16 @@ app.post("/generate-pdf", (req, res) => {
 
 // Rota para enviar e-mail com PDF anexado
 app.post("/send-email", async (req, res) => {
-  const { to, subject, cliente, empresa, valor, descricao } = req.body;
+  const { to, subject, cliente, empresa, valor, descricao, prazo } = req.body;
   console.log("Dados recebidos:", req.body);
 
   try {
+    // Calcula validade automática
+    const prazoDias = parseInt(prazo); // 7, 15 ou 30
+    const validade = new Date();
+    validade.setDate(validade.getDate() + prazoDias);
+    const validadeFormatada = validade.toLocaleDateString("pt-BR");
+    
     // Gera o HTML da proposta
     const htmlContent = `
       <!DOCTYPE html>
@@ -147,6 +153,7 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
