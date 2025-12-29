@@ -9,9 +9,11 @@ db.serialize(() => {
     valor TEXT,
     descricao TEXT,
     email TEXT,
+    validade TEXT,   -- nova coluna para armazenar a data limite
     data_envio TEXT,
     status TEXT
   )`);
 });
 
 module.exports = db;
+
