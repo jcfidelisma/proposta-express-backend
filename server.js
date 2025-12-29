@@ -74,6 +74,7 @@ app.post("/send-email", async (req, res) => {
           <p><strong>Empresa:</strong> ${empresa}</p>
           <p><strong>Valor:</strong> R$ ${valor}</p>
           <p><strong>Descrição:</strong> ${descricao}</p>
+          <p><strong>Validade:</strong> até ${validadeFormatada}</p> <!-- mostra validade -->
         </div>
         <div class="footer">
           <p>Atenciosamente,</p>
@@ -113,9 +114,9 @@ app.post("/send-email", async (req, res) => {
 
     // Salva no banco como "Enviado"
     db.run(
-      `INSERT INTO propostas (cliente, empresa, valor, descricao, email, data_envio, status)
-       VALUES (?, ?, ?, ?, ?, datetime('now'), ?)`,
-      [cliente, empresa, valor, descricao, to, "Enviado"]
+      `INSERT INTO propostas (cliente, empresa, valor, descricao, email, validade, data_envio, status)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?)`,
+      [cliente, empresa, valor, descricao, to, validadeFormatada, "Enviado"]
     );
 
     res.send("E-mail com PDF enviado com sucesso!");
@@ -146,5 +147,6 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
