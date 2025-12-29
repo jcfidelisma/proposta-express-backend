@@ -8,7 +8,7 @@ const sgMail = require("@sendgrid/mail");
 const db = require("./database.js");
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: "https://jcfidelisma.github.io" }));
 app.use(bodyParser.json());
 
 // Configuração do SendGrid via API
@@ -153,6 +153,7 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
