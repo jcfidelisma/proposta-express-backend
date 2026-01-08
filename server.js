@@ -53,79 +53,98 @@ app.post("/send-email", async (req, res) => {
     const validade = new Date();
     validade.setDate(validade.getDate() + prazoDias);
     const validadeFormatada = validade.toLocaleDateString("pt-BR");
-    
-    // Gera o HTML da proposta
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { font-family: Arial, sans-serif; color: #2c3e50; margin: 20px; }
-          .header { text-align: center; border-bottom: 2px solid #2980b9; padding-bottom: 10px; margin-bottom: 20px; }
-          .header img { max-width: 300px; height: auto; }
-          .content h1 { color: #2980b9; }
-          .content p { font-size: 14px; margin: 5px 0; }
-          .footer { margin-top: 30px; font-size: 12px; color: #7f8c8d; text-align: center; border-top: 1px solid #bdc3c7; padding-top: 10px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <img src="https://github.com/jcfidelisma/Proposta-Express/blob/main/logo.png?raw=true" alt="Logo Empresa">
-          <h2>Proposta Express</h2>
-        </div>
-        <div class="content">
-          <h1>Proposta Comercial</h1>
-          <p><strong>Cliente:</strong> ${cliente}</p>
-          <p><strong>Empresa:</strong> ${empresa}</p>
-          <p><strong>Valor:</strong> R$ ${valor}</p>
-          <p><strong>Descrição:</strong> ${descricao}</p>
-          <p><strong>Validade:</strong> até ${validadeFormatada}</p> <!-- mostra validade -->
-        </div>
-        <div class="footer">
-          <p>Atenciosamente,</p>
-          <p><strong>Equipe Proposta Express</strong></p>
-          <p>Este documento foi gerado automaticamente pelo sistema.</p>
-        </div>
-      </body>
-      </html>
-    `;
 
-    // Gera o PDF em memória
-    const pdfBuffer = await new Promise((resolve, reject) => {
-      pdf.create(htmlContent, { format: "A4", border: "10mm" }).toBuffer((err, buffer) => {
-        if (err) reject(err);
-        else resolve(buffer);
-      });
-    });
-
-    // Monta e envia e-mail via API SendGrid
-    const msg = {
-      to,
-      from: process.env.EMAIL_FROM, // remetente validado no SendGrid
-      subject,
-      text: "Segue em anexo a proposta comercial.",
-      html: htmlContent,
-      attachments: [
-        {
-          content: pdfBuffer.toString("base64"),
-          filename: "proposta.pdf",
-          type: "application/pdf",
-          disposition: "attachment"
-        }
-      ]
-    };
-
-    await sgMail.send(msg);
-
-    // Salva no banco como "Enviado"
+    // Primeiro salva no banco para obter o ID
     db.run(
       `INSERT INTO propostas (cliente, empresa, valor, descricao, email, validade, data_envio, status)
        VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?)`,
-      [cliente, empresa, valor, descricao, to, validadeFormatada, "Enviado"]
-    );
+      [cliente, empresa, valor, descricao, to, validadeFormatada, "Enviado"],
+      async function(err) {
+        if (err) {
+          console.error("Erro ao salvar proposta:", err);
+          return res.status(500).send("Erro ao salvar proposta");
+        }
 
-    res.send("E-mail com PDF enviado com sucesso!");
+        const propostaId = this.lastID;
+
+        // Links de confirmação
+        const aceitarLink = `https://proposta-express-backend-1.onrender.com/proposta/${propostaId}/aceitar`;
+        const recusarLink = `https://proposta-express-backend-1.onrender.com/proposta/${propostaId}/recusar`;
+
+        // Gera o HTML da proposta com botões de confirmação
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body { font-family: Arial, sans-serif; color: #2c3e50; margin: 20px; }
+              .header { text-align: center; border-bottom: 2px solid #2980b9; padding-bottom: 10px; margin-bottom: 20px; }
+              .header img { max-width: 300px; height: auto; }
+              .content h1 { color: #2980b9; }
+              .content p { font-size: 14px; margin: 5px 0; }
+              .footer { margin-top: 30px; font-size: 12px; color: #7f8c8d; text-align: center; border-top: 1px solid #bdc3c7; padding-top: 10px; }
+              .btn { display:inline-block; padding:10px 15px; border-radius:5px; text-decoration:none; color:#fff; margin:5px; }
+              .btn-aceitar { background:#27ae60; }
+              .btn-recusar { background:#c0392b; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <img src="https://github.com/jcfidelisma/Proposta-Express/blob/main/logo.png?raw=true" alt="Logo Empresa">
+              <h2>Proposta Express</h2>
+            </div>
+            <div class="content">
+              <h1>Proposta Comercial</h1>
+              <p><strong>Cliente:</strong> ${cliente}</p>
+              <p><strong>Empresa:</strong> ${empresa}</p>
+              <p><strong>Valor:</strong> R$ ${valor}</p>
+              <p><strong>Descrição:</strong> ${descricao}</p>
+              <p><strong>Validade:</strong> até ${validadeFormatada}</p>
+              <hr>
+              <p>Confirme sua decisão:</p>
+              <a href="${aceitarLink}" class="btn btn-aceitar">Aceitar Proposta</a>
+              <a href="${recusarLink}" class="btn btn-recusar">Recusar Proposta</a>
+            </div>
+            <div class="footer">
+              <p>Atenciosamente,</p>
+              <p><strong>Equipe Proposta Express</strong></p>
+              <p>Este documento foi gerado automaticamente pelo sistema.</p>
+            </div>
+          </body>
+          </html>
+        `;
+
+        // Gera o PDF em memória
+        const pdfBuffer = await new Promise((resolve, reject) => {
+          pdf.create(htmlContent, { format: "A4", border: "10mm" }).toBuffer((err, buffer) => {
+            if (err) reject(err);
+            else resolve(buffer);
+          });
+        });
+
+        // Monta e envia e-mail via API SendGrid
+        const msg = {
+          to,
+          from: process.env.EMAIL_FROM,
+          subject,
+          text: "Segue em anexo a proposta comercial.",
+          html: htmlContent,
+          attachments: [
+            {
+              content: pdfBuffer.toString("base64"),
+              filename: "proposta.pdf",
+              type: "application/pdf",
+              disposition: "attachment"
+            }
+          ]
+        };
+
+        await sgMail.send(msg);
+
+        res.send("E-mail com PDF enviado com sucesso!");
+      }
+    );
   } catch (error) {
     console.error("Erro ao enviar e-mail:", error);
 
@@ -138,6 +157,23 @@ app.post("/send-email", async (req, res) => {
 
     res.status(500).send("Erro ao enviar e-mail");
   }
+});
+
+// Rotas para aceitar/recusar propostas
+app.get("/proposta/:id/aceitar", (req, res) => {
+  const id = req.params.id;
+  db.run(`UPDATE propostas SET status = ? WHERE id = ?`, ["Aceita", id], (err) => {
+    if (err) return res.status(500).send("Erro ao confirmar proposta");
+    res.send("✅ Proposta aceita com sucesso!");
+  });
+});
+
+app.get("/proposta/:id/recusar", (req, res) => {
+  const id = req.params.id;
+  db.run(`UPDATE propostas SET status = ? WHERE id = ?`, ["Recusada", id], (err) => {
+    if (err) return res.status(500).send("Erro ao recusar proposta");
+    res.send("❌ Proposta recusada.");
+  });
 });
 
 // Rota para consultar histórico
