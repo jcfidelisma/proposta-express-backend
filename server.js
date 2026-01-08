@@ -47,74 +47,74 @@ app.post("/send-email", async (req, res) => {
   const { to, subject, cliente, empresa, valor, descricao, prazo } = req.body;
   console.log("Dados recebidos:", req.body);
 
-  try {
-    // Calcula validade automática
-    const prazoDias = parseInt(prazo); // 7, 15 ou 30
-    const validade = new Date();
-    validade.setDate(validade.getDate() + prazoDias);
-    const validadeFormatada = validade.toLocaleDateString("pt-BR");
+  // Calcula validade automática
+  const prazoDias = parseInt(prazo);
+  const validade = new Date();
+  validade.setDate(validade.getDate() + prazoDias);
+  const validadeFormatada = validade.toLocaleDateString("pt-BR");
 
-    // Primeiro salva no banco para obter o ID
-    db.run(
-      `INSERT INTO propostas (cliente, empresa, valor, descricao, email, validade, data_envio, status)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?)`,
-      [cliente, empresa, valor, descricao, to, validadeFormatada, "Enviado"],
-      async function(err) {
-        if (err) {
-          console.error("Erro ao salvar proposta:", err);
-          return res.status(500).send("Erro ao salvar proposta");
-        }
+  // Primeiro salva no banco como "Pendente"
+  db.run(
+    `INSERT INTO propostas (cliente, empresa, valor, descricao, email, validade, data_envio, status)
+     VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?)`,
+    [cliente, empresa, valor, descricao, to, validadeFormatada, "Pendente"],
+    async function(err) {
+      if (err) {
+        console.error("Erro ao salvar proposta:", err);
+        return res.status(500).send("Erro ao salvar proposta");
+      }
 
-        const propostaId = this.lastID;
+      const propostaId = this.lastID;
 
-        // Links de confirmação
-        const aceitarLink = `https://proposta-express-backend-1.onrender.com/proposta/${propostaId}/aceitar`;
-        const recusarLink = `https://proposta-express-backend-1.onrender.com/proposta/${propostaId}/recusar`;
+      // Links de confirmação
+      const aceitarLink = `https://proposta-express-backend-1.onrender.com/proposta/${propostaId}/aceitar`;
+      const recusarLink = `https://proposta-express-backend-1.onrender.com/proposta/${propostaId}/recusar`;
 
-        // Gera o HTML da proposta com botões de confirmação
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              body { font-family: Arial, sans-serif; color: #2c3e50; margin: 20px; }
-              .header { text-align: center; border-bottom: 2px solid #2980b9; padding-bottom: 10px; margin-bottom: 20px; }
-              .header img { max-width: 300px; height: auto; }
-              .content h1 { color: #2980b9; }
-              .content p { font-size: 14px; margin: 5px 0; }
-              .footer { margin-top: 30px; font-size: 12px; color: #7f8c8d; text-align: center; border-top: 1px solid #bdc3c7; padding-top: 10px; }
-              .btn { display:inline-block; padding:10px 15px; border-radius:5px; text-decoration:none; color:#fff; margin:5px; }
-              .btn-aceitar { background:#27ae60; }
-              .btn-recusar { background:#c0392b; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <img src="https://github.com/jcfidelisma/Proposta-Express/blob/main/logo.png?raw=true" alt="Logo Empresa">
-              <h2>Proposta Express</h2>
-            </div>
-            <div class="content">
-              <h1>Proposta Comercial</h1>
-              <p><strong>Cliente:</strong> ${cliente}</p>
-              <p><strong>Empresa:</strong> ${empresa}</p>
-              <p><strong>Valor:</strong> R$ ${valor}</p>
-              <p><strong>Descrição:</strong> ${descricao}</p>
-              <p><strong>Validade:</strong> até ${validadeFormatada}</p>
-              <hr>
-              <p>Confirme sua decisão:</p>
-              <a href="${aceitarLink}" class="btn btn-aceitar">Aceitar Proposta</a>
-              <a href="${recusarLink}" class="btn btn-recusar">Recusar Proposta</a>
-            </div>
-            <div class="footer">
-              <p>Atenciosamente,</p>
-              <p><strong>Equipe Proposta Express</strong></p>
-              <p>Este documento foi gerado automaticamente pelo sistema.</p>
-            </div>
-          </body>
-          </html>
-        `;
+      // Gera o HTML da proposta com botões de confirmação
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; color: #2c3e50; margin: 20px; }
+            .header { text-align: center; border-bottom: 2px solid #2980b9; padding-bottom: 10px; margin-bottom: 20px; }
+            .header img { max-width: 300px; height: auto; }
+            .content h1 { color: #2980b9; }
+            .content p { font-size: 14px; margin: 5px 0; }
+            .footer { margin-top: 30px; font-size: 12px; color: #7f8c8d; text-align: center; border-top: 1px solid #bdc3c7; padding-top: 10px; }
+            .btn { display:inline-block; padding:10px 15px; border-radius:5px; text-decoration:none; color:#fff; margin:5px; }
+            .btn-aceitar { background:#27ae60; }
+            .btn-recusar { background:#c0392b; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <img src="https://github.com/jcfidelisma/Proposta-Express/blob/main/logo.png?raw=true" alt="Logo Empresa">
+            <h2>Proposta Express</h2>
+          </div>
+          <div class="content">
+            <h1>Proposta Comercial</h1>
+            <p><strong>Cliente:</strong> ${cliente}</p>
+            <p><strong>Empresa:</strong> ${empresa}</p>
+            <p><strong>Valor:</strong> R$ ${valor}</p>
+            <p><strong>Descrição:</strong> ${descricao}</p>
+            <p><strong>Validade:</strong> até ${validadeFormatada}</p>
+            <hr>
+            <p>Confirme sua decisão:</p>
+            <a href="${aceitarLink}" class="btn btn-aceitar">Aceitar Proposta</a>
+            <a href="${recusarLink}" class="btn btn-recusar">Recusar Proposta</a>
+          </div>
+          <div class="footer">
+            <p>Atenciosamente,</p>
+            <p><strong>Equipe Proposta Express</strong></p>
+            <p>Este documento foi gerado automaticamente pelo sistema.</p>
+          </div>
+        </body>
+        </html>
+      `;
 
+      try {
         // Gera o PDF em memória
         const pdfBuffer = await new Promise((resolve, reject) => {
           pdf.create(htmlContent, { format: "A4", border: "10mm" }).toBuffer((err, buffer) => {
@@ -142,21 +142,20 @@ app.post("/send-email", async (req, res) => {
 
         await sgMail.send(msg);
 
+        // Atualiza status para "Enviado"
+        db.run(`UPDATE propostas SET status = ? WHERE id = ?`, ["Enviado", propostaId]);
+
         res.send("E-mail com PDF enviado com sucesso!");
+      } catch (error) {
+        console.error("Erro ao enviar e-mail:", error);
+
+        // Atualiza status para "Falha"
+        db.run(`UPDATE propostas SET status = ? WHERE id = ?`, ["Falha", propostaId]);
+
+        res.status(500).send("Erro ao enviar e-mail");
       }
-    );
-  } catch (error) {
-    console.error("Erro ao enviar e-mail:", error);
-
-    // Salva no banco como "Falha"
-    db.run(
-      `INSERT INTO propostas (cliente, empresa, valor, descricao, email, data_envio, status)
-       VALUES (?, ?, ?, ?, ?, datetime('now'), ?)`,
-      [req.body.cliente, req.body.empresa, req.body.valor, req.body.descricao, req.body.to, "Falha"]
-    );
-
-    res.status(500).send("Erro ao enviar e-mail");
-  }
+    }
+  );
 });
 
 // Rotas para aceitar/recusar propostas
@@ -189,8 +188,5 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
-
-
-
 
 
